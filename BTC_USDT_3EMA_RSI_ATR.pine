@@ -2,7 +2,7 @@
 // © arminkheirkhahan
 
 //@version=4
-strategy("My Strategy", overlay=true, margin_long=10, margin_short=10)
+strategy("3EMA Stocahstic ATR", overlay=true, margin_long=10, margin_short=10)
 
 ep = 0.0
 ep := na(ep[1]) ? na : ep[1]
@@ -10,6 +10,12 @@ ep := na(ep[1]) ? na : ep[1]
 // ABOUT
 version = input(title="Version", group="ABOUT", options=["1.0.0","2.0.0"], defval="1.0.0")
 
+// Date 
+start_date =  input(title="Start Date", type=input.time,  group="TIME RANGE", defval=timestamp("14 May 2021 00:00 +0300"))
+end_date =  input(title="End Date", type=input.time, group="TIME RANGE", defval=timestamp("14 Jun 2021 00:00 +0300"))
+
+dateRange = time >= start_date and time <= end_date  
+    
 // CURRENCY SETTING
 base_currency = input(title="Base Currency", group="CURRENCY SETTINGS", options=["Default"], defval="Default")
 exchange_rate = input(title="Exchange Rate", group="CURRENCY SETTINGS", type=input.float, defval=1)
@@ -56,7 +62,7 @@ second_buy_condition = crossover(k,d)
 buy_condition = first_buy_condition and second_buy_condition
 atr_value = rma(tr(true), atr_length)
 
-if (buy_condition)
+if (buy_condition and dateRange)
     ep := close
     strategy.entry("long", strategy.long,order_size/close, limit=close)
     take_profit_price = ep + (atr_value * take_profit_multiple)

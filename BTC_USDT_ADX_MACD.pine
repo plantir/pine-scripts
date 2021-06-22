@@ -1,0 +1,78 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © arminkheirkhahan
+
+//@version=4
+strategy("ADX_MACD", overlay=true, margin_long=10, margin_short=10)
+
+ep = 0.0
+ep := na(ep[1]) ? na : ep[1]
+
+
+// Date 
+start_date =  input(title="Start Date", type=input.time,  group="TIME RANGE", defval=timestamp("21 May 2021 00:00 +0300"))
+end_date =  input(title="End Date", type=input.time, group="TIME RANGE", defval=timestamp("21 Jun 2021 00:00 +0300"))
+isDate = time >= start_date and time <= end_date  
+
+// ORDER SIZE SETTINGS
+order_size = input(title="Order Size", group="ORDER SIZE SETTINGS", type=input.integer,inline = "Highlight", defval=100)
+order_mode = input(title="",group="ORDER SIZE SETTINGS", options=["% of equality","cash"],inline = "Highlight", defval="cash")
+
+// ATR SETTINGS
+atr_length = input(title="ATR Length", group="ATR SETTINGS", type=input.integer, defval=14)
+atr_value = rma(tr(true), atr_length)
+
+// POSITION EXIT SETTINGS
+stop_loss_multiple = input(title="Stop Loss ATR Multiplier (Risk)", group="POSITION EXIT SETTINGS", type=input.integer, defval=3)
+take_profit_multiple = input(title="Take Profit ATR Multiplier (Reward)", group="POSITION EXIT SETTINGS", type=input.integer, defval=2)
+
+// ADX
+len = input(title="Length", type=input.integer, defval=6)
+len1 = input(title="Length1", type=input.integer, defval=1)
+th = input(title="threshold", type=input.integer, defval=20)
+TrueRange = max(max(high-low, abs(high-nz(close[1]))), abs(low-nz(close[1])))
+DirectionalMovementPlus = high-nz(high[1]) > nz(low[1])-low ? max(high-nz(high[1]), 0): 0
+DirectionalMovementMinus = nz(low[1])-low > high-nz(high[1]) ? max(nz(low[1])-low, 0): 0
+
+SmoothedTrueRange = TrueRange
+SmoothedTrueRange := nz(SmoothedTrueRange[1]) - (nz(SmoothedTrueRange[1])/len) + TrueRange
+SmoothedDirectionalMovementPlus = DirectionalMovementPlus
+SmoothedDirectionalMovementPlus := nz(SmoothedDirectionalMovementPlus[1]) - (nz(SmoothedDirectionalMovementPlus[1])/len) + DirectionalMovementPlus
+SmoothedDirectionalMovementMinus = DirectionalMovementMinus
+SmoothedDirectionalMovementMinus := nz(SmoothedDirectionalMovementMinus[1]) - (nz(SmoothedDirectionalMovementMinus[1])/len) + DirectionalMovementMinus
+DIPlus = SmoothedDirectionalMovementPlus / SmoothedTrueRange * 100
+DIMinus = SmoothedDirectionalMovementMinus / SmoothedTrueRange * 100
+crosscall = (DIPlus > DIMinus)
+
+// MACD
+
+fast_length = input(title="Fast Length", type=input.integer, defval=8)
+slow_length = input(title="Slow Length", type=input.integer, defval=21)
+signal_length = input(title="Signal Smoothing", type=input.integer, minval = 1, maxval = 50, defval = 5)
+fast_ma =  ema(close, fast_length)
+slow_ma =  ema(close, slow_length)
+macd = fast_ma - slow_ma
+signal = ema(macd, signal_length)
+hist = macd - signal
+long_position_condition = DIPlus > DIMinus and crossover(macd,signal) and macd < 0
+short_position_condition = DIMinus > DIMinus and crossunder(macd,signal) and macd > 0
+
+
+
+
+
+plotshape(long_position_condition,title="buy", style=shape.triangleup, location=location.belowbar, color=color.green)
+plotshape(short_position_condition,title="sell", style=shape.triangledown, location=location.abovebar, color=color.red)
+
+if (long_position_condition and isDate)
+    ep := close
+    strategy.entry("long", strategy.long,order_size/close, limit=close)
+    take_profit_price = ep * 1.014
+    stop_loss_price = ep * 0.97
+    strategy.exit("exit", "long", limit=take_profit_price,stop= stop_loss_price)
+if (short_position_condition and isDate)
+    ep := close
+    strategy.entry("short", strategy.short,order_size/close, limit=close)
+    take_profit_price = ep * 0.986
+    stop_loss_price = ep * 1.03
+    strategy.exit("exit", "short", limit=take_profit_price,stop= stop_loss_price)
+
