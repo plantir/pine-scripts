@@ -65,8 +65,8 @@ plot(longer, color = color.aqua)
 plot(longest, color = color.blue)
 
 
-long_position_condition = DIPlus > DIMinus and crossover(macd,signal) and macd < 0 and close > shortest
-short_position_condition =DIMinus > DIPlus and crossunder(macd,signal) and macd > 0 and close < shortest
+long_position_condition = DIPlus > DIMinus and crossover(macd,signal) and macd < 0 and close > shortest 
+short_position_condition = DIMinus > DIPlus and crossunder(macd,signal) and macd > 0 and close < shortest  
 
 
 
@@ -77,12 +77,12 @@ short_position_condition =DIMinus > DIPlus and crossunder(macd,signal) and macd 
 
 if (long_position_condition and isDate)
     strategy.entry("long", strategy.long,order_size/close, limit=close)
-    take_profit_price = close * 1.15
-    stop_loss_price = close * 0.85
+    take_profit_price = close * 1.14
+    stop_loss_price = close * 0.86
     strategy.exit("exit", "long", limit=take_profit_price,stop= stop_loss_price)
 if (short_position_condition and isDate)
     strategy.entry("short", strategy.short,order_size/close, limit=close)
-    take_profit_price = close * 0.85
-    stop_loss_price = close * 1.15
+    take_profit_price = close * 0.86
+    stop_loss_price = close * 1.14
     strategy.exit("exit", "short", limit=take_profit_price,stop= stop_loss_price)
 
