@@ -2,15 +2,15 @@
 // © arminkheirkhahan
 
 //@version=4
-strategy("ADX_MACD", overlay=true, margin_long=10, margin_short=10)
+strategy("ADX_MACD", overlay=true, margin_long=3, margin_short=3,initial_capital=100, 
+     commission_type=strategy.commission.percent, 
+     commission_value=0.1,currency=currency.USD,pyramiding=1)
 
-ep = 0.0
-ep := na(ep[1]) ? na : ep[1]
 
 
 // Date 
-start_date =  input(title="Start Date", type=input.time,  group="TIME RANGE", defval=timestamp("21 May 2021 00:00 +0300"))
-end_date =  input(title="End Date", type=input.time, group="TIME RANGE", defval=timestamp("21 Jun 2021 00:00 +0300"))
+start_date =  input(title="Start Date", type=input.time,  group="TIME RANGE", defval=timestamp("01 Jan 2020 00:00 +0300"))
+end_date =  input(title="End Date", type=input.time, group="TIME RANGE", defval=timestamp("01 Jul 2021 00:00 +0300"))
 isDate = time >= start_date and time <= end_date  
 
 // ORDER SIZE SETTINGS
@@ -41,7 +41,7 @@ SmoothedDirectionalMovementMinus = DirectionalMovementMinus
 SmoothedDirectionalMovementMinus := nz(SmoothedDirectionalMovementMinus[1]) - (nz(SmoothedDirectionalMovementMinus[1])/len) + DirectionalMovementMinus
 DIPlus = SmoothedDirectionalMovementPlus / SmoothedTrueRange * 100
 DIMinus = SmoothedDirectionalMovementMinus / SmoothedTrueRange * 100
-crosscall = (DIPlus > DIMinus)
+
 
 // MACD
 
@@ -53,26 +53,36 @@ slow_ma =  ema(close, slow_length)
 macd = fast_ma - slow_ma
 signal = ema(macd, signal_length)
 hist = macd - signal
-long_position_condition = DIPlus > DIMinus and crossover(macd,signal) and macd < 0
-short_position_condition = DIMinus > DIMinus and crossunder(macd,signal) and macd > 0
+
+shortest = ema(close, 20)
+short = ema(close, 50)
+longer = ema(close, 100)
+longest = ema(close, 200)
+
+plot(shortest, color = color.red)
+plot(short, color = color.orange)
+plot(longer, color = color.aqua)
+plot(longest, color = color.blue)
+
+
+long_position_condition = DIPlus > DIMinus and crossover(macd,signal) and macd < 0 and close > shortest
+short_position_condition =DIMinus > DIPlus and crossunder(macd,signal) and macd > 0 and close < shortest
 
 
 
 
 
-plotshape(long_position_condition,title="buy", style=shape.triangleup, location=location.belowbar, color=color.green)
-plotshape(short_position_condition,title="sell", style=shape.triangledown, location=location.abovebar, color=color.red)
+//plotshape(long_position_condition,title="buy", style=shape.triangleup, location=location.belowbar, color=color.green)
+//plotshape(short_position_condition,title="sell", style=shape.triangledown, location=location.abovebar, color=color.red)
 
 if (long_position_condition and isDate)
-    ep := close
     strategy.entry("long", strategy.long,order_size/close, limit=close)
-    take_profit_price = ep * 1.014
-    stop_loss_price = ep * 0.97
+    take_profit_price = close * 1.15
+    stop_loss_price = close * 0.85
     strategy.exit("exit", "long", limit=take_profit_price,stop= stop_loss_price)
 if (short_position_condition and isDate)
-    ep := close
     strategy.entry("short", strategy.short,order_size/close, limit=close)
-    take_profit_price = ep * 0.986
-    stop_loss_price = ep * 1.03
+    take_profit_price = close * 0.85
+    stop_loss_price = close * 1.15
     strategy.exit("exit", "short", limit=take_profit_price,stop= stop_loss_price)
 
