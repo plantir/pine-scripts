@@ -2,21 +2,20 @@
 // © arminkheirkhahan
 
 //@version=4
-strategy("ADX_MACD", overlay=true, margin_long=3, margin_short=3,initial_capital=30, 
+strategy("ADX_MACD", overlay=true, margin_long=3, margin_short=3,initial_capital=100, 
      commission_type=strategy.commission.percent, 
      commission_value=0.1,currency=currency.USD,pyramiding=1)
 
 
 
 // Date 
-start_date =  input(title="Start Date", type=input.time,  group="TIME RANGE", defval=timestamp("01 Jan 2020 00:00 +0300"))
+start_date =  input(title="Start Date", type=input.time,  group="TIME RANGE", defval=timestamp("30 Mar 2021 00:00 +0300"))
 end_date =  input(title="End Date", type=input.time, group="TIME RANGE", defval=timestamp("01 Jan 2022 00:00 +0300"))
 isDate = time >= start_date and time <= end_date  
 
 // ORDER SIZE SETTINGS
-order_size = input(title="Order Size", group="ORDER SIZE SETTINGS", type=input.integer,inline = "Highlight", defval=20)
-order_mode = input(title="",group="ORDER SIZE SETTINGS", options=["% of equality","cash"],inline = "Highlight", defval="cash")
-
+order_size = input(title="Order Size", group="ORDER SIZE SETTINGS", type=input.integer, defval=100)
+leverage = input(title="Leverage", group="ORDER SIZE SETTINGS", type=input.integer, defval=1)
 // ATR SETTINGS
 atr_length = input(title="ATR Length", group="ATR SETTINGS", type=input.integer, defval=14)
 atr_value = rma(tr(true), atr_length)
@@ -60,7 +59,7 @@ short_position_condition = DIMinus > DIPlus and crossunder(macd,signal) and macd
 
 // LONG STRATEGY
 if (long_position_condition and isDate)
-    strategy.entry("long", strategy.long,order_size/close, limit=close)
+    strategy.entry("long", strategy.long,order_size/close*leverage, limit=close)
     take_profit_price = close * (100+take_profit_multiple)/100
     stop_loss_price = close * (100-stop_loss_multiple)/100
     strategy.exit("exit", "long", limit=take_profit_price,stop= stop_loss_price)
@@ -68,7 +67,7 @@ if (long_position_condition and isDate)
 
 // SHORT STRATEGY 
 if (short_position_condition and isDate)
-    strategy.entry("short", strategy.short,order_size/close, limit=close)
+    strategy.entry("short", strategy.short,order_size/close*leverage, limit=close)
     take_profit_price = close * (100-take_profit_multiple)/100
     stop_loss_price = close * (100+stop_loss_multiple)/100
     strategy.exit("exit", "short", limit=take_profit_price,stop= stop_loss_price)
