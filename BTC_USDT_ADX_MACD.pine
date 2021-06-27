@@ -1,6 +1,11 @@
 // This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © arminkheirkhahan
-
+// {
+// "symbol":"BCHUSDT",
+// "quantity":"{{strategy.position_size}}",
+// "enter_price":"{{strategy.order.price}}",
+// "side":"{{strategy.order.action}}"
+// }
 //@version=4
 strategy("ADX_MACD", overlay=true, margin_long=3, margin_short=3,initial_capital=100, 
      commission_type=strategy.commission.percent, 
