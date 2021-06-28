@@ -39,35 +39,25 @@ conversionLine = donchian(conversionPeriods)
 baseLine = donchian(basePeriods)
 leadLine1 = avg(conversionLine, baseLine)
 leadLine2 = donchian(laggingSpan2Periods)
-// plot(conversionLine, color=#0496ff, title="Conversion Line")
-// plot(baseLine, color=#991515, title="Base Line")
-// plot(close, offset = -displacement + 1, color=#459915, title="Lagging Span")
-p1 = plot(leadLine1, offset = displacement - 1, color=color.green,
-	 title="Lead 1")
-p2 = plot(leadLine2, offset = displacement - 1, color=color.red,
-	 title="Lead 2")
-fill(p1, p2, color = leadLine1 > leadLine2 ? color.green : color.red)
+
+
 
 
 // CMF
 length = input(20, minval=1)
 ad = close==high and close==low or high==low ? 0 : ((2*close-low-high)/(high-low))*volume
 mf = sum(ad, length) / sum(volume, length)
-plot(mf, color=#459915, title="MF")
-hline(0, color=#606060, title="Zero", linestyle=hline.style_dashed)
-// plotshape(mf>0, style=shape.arrowup,color=color.green)
-// plotshape(mf<0, style=shape.arrowdown,color=color.red)
+
+
 // STC
 EEEEEE=input(12,"Length")
 BBBB=input(26,"FastLength")
 BBBBB=input(50,"SlowLength")
-
 AAAA(BBB, BBBB, BBBBB) =>
     fastMA = ema(BBB, BBBB)
     slowMA = ema(BBB, BBBBB)
     AAAA = fastMA - slowMA
     AAAA
-    
 AAAAA(EEEEEE, BBBB, BBBBB) => 
     AAA=input(0.5)
     var CCCCC = 0.0
@@ -84,15 +74,8 @@ AAAAA(EEEEEE, BBBB, BBBBB) =>
     DDDDDD := (DDDDD > 0 ? ((DDD - DDDD) / DDDDD) * 100 : nz(DDDDDD[1])) 
     EEEEE := (na(EEEEE[1]) ? DDDDDD : EEEEE[1] + (AAA * (DDDDDD - EEEEE[1])))
     EEEEE
-
 mAAAAA = AAAAA(EEEEEE,BBBB,BBBBB)
 mColor = mAAAAA > mAAAAA[1] ? color.new(color.green,20) : color.new(color.red,20)
-
-plot(mAAAAA,color=mColor, title="STC",linewidth=2)
-
-ul=plot(25,color=color.new(color.gray,70))
-ll=plot(75,color=color.new(color.gray,70)) 
-fill(ul,ll,color=color.new(color.gray,96))
 
 // LONG STRATEGY
 goLongCondition1 = mAAAAA > 75
@@ -107,6 +90,7 @@ if(isDate and goLongCondition1 and goLongCondition2 and goLongCondition3 and noL
     strategy.exit("exit","long", limit=takeProfit, stop=stopLoss)
 
 
+// SHORT STRATEGY
 goShortCondition1 = mAAAAA < 25
 goShortCondition2 = mf < 0
 goShortCondition3 = close < leadLine1[displacement - 1] and close < leadLine2[displacement - 1]
