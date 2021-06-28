@@ -1,11 +1,6 @@
 // This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © arminkheirkhahan
-// {
-// "symbol":"BCHUSDT",
-// "quantity":"{{strategy.position_size}}",
-// "enter_price":"{{strategy.order.price}}",
-// "side":"{{strategy.order.action}}"
-// }
+
 //@version=4
 strategy("ADX_MACD", overlay=true, margin_long=3, margin_short=3,initial_capital=100, 
      commission_type=strategy.commission.percent, 
@@ -26,8 +21,8 @@ atr_length = input(title="ATR Length", group="ATR SETTINGS", type=input.integer,
 atr_value = rma(tr(true), atr_length)
 
 // POSITION EXIT SETTINGS
-take_profit_multiple = input(title="Take Profit Percentage Multiplier (Reward)", group="POSITION EXIT SETTINGS", type=input.integer, defval=13)
-stop_loss_multiple = input(title="Stop Loss Percentage Multiplier (Risk)", group="POSITION EXIT SETTINGS", type=input.integer, defval=7)
+take_profit_multiple = input(title="Take Profit Percentage Multiplier (Reward)", group="POSITION EXIT SETTINGS", type=input.integer, defval=13) / 100
+stop_loss_multiple = input(title="Stop Loss Percentage Multiplier (Risk)", group="POSITION EXIT SETTINGS", type=input.integer, defval=7) / 100
 
 // ADX
 len = input(title="ADX Length", type=input.integer, defval=2)
@@ -58,22 +53,33 @@ signal = ema(macd, signal_length)
 ema_length = input(title="EMA", type=input.integer, defval=200)
 ema_val = ema(close, ema_length)
 plot(ema_val, color = color.red)
-long_position_condition = DIPlus > DIMinus and crossover(macd,signal) and macd < 0 and close > ema_val 
-short_position_condition = DIMinus > DIPlus and crossunder(macd,signal) and macd > 0 and close < ema_val  
+
 
 
 // LONG STRATEGY
-if (long_position_condition and isDate)
-    strategy.entry("long", strategy.long,order_size/close*leverage, limit=close)
-    take_profit_price = close * (100+take_profit_multiple)/100
-    stop_loss_price = close * (100-stop_loss_multiple)/100
-    strategy.exit("exit", "long", limit=take_profit_price,stop= stop_loss_price)
+goLongCondition1 = DIPlus > DIMinus
+goLongCondition2 = crossover(macd,signal) 
+goLongCondition3 = macd < 0
+goLongCondition4 = close > ema_val
+inLongTrade = strategy.position_size > 0
+noLongTrade = strategy.position_size <= 0
+if(isDate and goLongCondition1 and goLongCondition2 and goLongCondition3 and goLongCondition4 and noLongTrade)
+    strategy.entry("long",strategy.long, when= noLongTrade, qty=order_size/close*leverage)
+    stopLoss = close * (1 - stop_loss_multiple)
+    takeProfit = close * (1 + take_profit_multiple)
+    strategy.exit("exit","long", limit=takeProfit, stop=stopLoss)
 
 
-// SHORT STRATEGY 
-if (short_position_condition and isDate)
-    strategy.entry("short", strategy.short,order_size/close*leverage, limit=close)
-    take_profit_price = close * (100-take_profit_multiple)/100
-    stop_loss_price = close * (100+stop_loss_multiple)/100
-    strategy.exit("exit", "short", limit=take_profit_price,stop= stop_loss_price)
+goShortCondition1 = DIMinus > DIPlus
+goShortCondition2 = crossunder(macd,signal) 
+goShortCondition3 = macd > 0
+goShortCondition4 = close < ema_val
+inShortTrade = strategy.position_size < 0
+noShortTrade = strategy.position_size >= 0
+if(isDate and goShortCondition1 and goShortCondition2 and goShortCondition3 and goShortCondition4 and noShortTrade)
+    strategy.exit("exit","long", limit=close)
+    strategy.entry("short",strategy.short, when= noShortTrade, qty=order_size/close*leverage)
+    stopLoss = close * (1 + stop_loss_multiple)
+    takeProfit = close * (1 - take_profit_multiple)
+    strategy.exit("exit","short", limit=takeProfit, stop=stopLoss)
 
