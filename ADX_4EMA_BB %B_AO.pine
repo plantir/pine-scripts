@@ -1,0 +1,96 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © arminkheirkhahan
+
+//@version=4
+strategy("ADX_4EMA_BB_AO", overlay=true, margin_long=3, margin_short=3,initial_capital=100, 
+     commission_type=strategy.commission.percent, 
+     commission_value=0.1,currency=currency.USD,pyramiding=1)
+
+
+
+// Date 
+start_date =  input(title="Start Date", type=input.time,  group="TIME RANGE", defval=timestamp("01 Jul 2021 00:00 +0300"))
+end_date =  input(title="End Date", type=input.time, group="TIME RANGE", defval=timestamp("01 Jan 2022 00:00 +0300"))
+isDate = time >= start_date and time <= end_date  
+
+// ORDER SIZE SETTINGS
+order_size = input(title="Order Size", group="ORDER SIZE SETTINGS", type=input.integer, defval=100)
+leverage = input(title="Leverage", group="ORDER SIZE SETTINGS", type=input.integer, defval=1)
+
+// POSITION EXIT SETTINGS
+take_profit_multiple = input(title="Take Profit Percentage Multiplier (Reward)", group="POSITION EXIT SETTINGS", type=input.integer, defval=1) / 100
+stop_loss_multiple = input(title="Stop Loss Percentage Multiplier (Risk)", group="POSITION EXIT SETTINGS", type=input.integer, defval=1) / 100
+
+// ADX
+adxlen = input(14, title="ADX Smoothing")
+dilen = input(14, title="DI Length")
+dirmov(len) =>
+	up = change(high)
+	down = -change(low)
+	plusDM = na(up) ? na : (up > down and up > 0 ? up : 0)
+	minusDM = na(down) ? na : (down > up and down > 0 ? down : 0)
+	truerange = rma(tr, len)
+	plus = fixnan(100 * rma(plusDM, len) / truerange)
+	minus = fixnan(100 * rma(minusDM, len) / truerange)
+	[plus, minus]
+adx(dilen, adxlen) =>
+	[plus, minus] = dirmov(dilen)
+	sum = plus + minus
+	adx = 100 * rma(abs(plus - minus) / (sum == 0 ? 1 : sum), adxlen)
+sig = adx(dilen, adxlen)
+
+
+
+// EMA
+ema1_length = input(title="EMA", type=input.integer, defval=5)
+ema2_length = input(title="EMA", type=input.integer, defval=21)
+ema3_length = input(title="EMA", type=input.integer, defval=50)
+ema4_length = input(title="EMA", type=input.integer, defval=200)
+ema1_val = ema(close, ema1_length)
+ema2_val = ema(close, ema2_length)
+ema3_val = ema(close, ema3_length)
+ema4_val = ema(close, ema4_length)
+
+
+// BB %B
+length = input(20, minval=1)
+src = input(close, title="Source")
+mult = input(2.0, minval=0.001, maxval=50, title="StdDev")
+basis = sma(src, length)
+dev = mult * stdev(src, length)
+upper = basis + dev
+lower = basis - dev
+bbr = (src - lower)/(upper - lower)
+
+// AO
+ao = sma(hl2,5) - sma(hl2,34)
+
+// LONG STRATEGY
+goLongCondition1 = sig > 15
+goLongCondition2 = ema1_val > ema2_val and ema2_val > ema3_val and ema3_val > ema4_val
+goLongCondition3 = bbr > 0.75
+goLongCondition4 = ao > 2
+plotshape(goLongCondition1 and goLongCondition2 and goLongCondition3 and goLongCondition4, color=color.green, location=location.belowbar,style=shape.triangleup)
+inLongTrade = strategy.position_size > 0
+noLongTrade = strategy.position_size <= 0
+if(isDate and goLongCondition1 and goLongCondition2 and goLongCondition3 and goLongCondition4 and noLongTrade)
+    strategy.entry("long",strategy.long, when= noLongTrade, qty=order_size/close*leverage)
+    stopLoss = close * (1 + stop_loss_multiple)
+    takeProfit = close * (1 - take_profit_multiple)
+    strategy.exit("exit","long", limit=takeProfit, stop=stopLoss)
+
+
+goShortCondition1 = sig > 15
+goShortCondition2 = ema1_val < ema2_val and ema3_val < ema4_val
+goShortCondition3 = bbr < 0.25
+goShortCondition4 = ao < -2
+plotshape(goShortCondition1 and goShortCondition2 and goShortCondition3 and goShortCondition4, color=color.red, location=location.abovebar,style=shape.triangledown)
+inShortTrade = strategy.position_size < 0
+noShortTrade = strategy.position_size >= 0
+if(isDate and goShortCondition1 and goShortCondition2 and goShortCondition3 and goShortCondition4 and noShortTrade)
+    strategy.exit("exit","long", limit=close)
+    strategy.entry("short",strategy.short, when= noShortTrade, qty=order_size/close*leverage)
+    stopLoss = close * (1 + stop_loss_multiple)
+    takeProfit = close * (1 - take_profit_multiple)
+    strategy.exit("exit","short", limit=takeProfit, stop=stopLoss)
+
