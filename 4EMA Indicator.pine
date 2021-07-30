@@ -1,0 +1,40 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © elmsource190
+
+//@version=4
+study(shorttitle="4EMA", title="4EMA Indicator", overlay=true, resolution="")
+
+position_mode = ''
+position_mode := na(position_mode[1])?na:position_mode[1]
+
+
+ema1_length = input(title="EMA", type=input.integer, defval=8)
+ema2_length = input(title="EMA", type=input.integer, defval=13)
+ema3_length = input(title="EMA", type=input.integer, defval=50)
+ema4_length = input(title="EMA", type=input.integer, defval=55)
+ema1_val = ema(close, ema1_length)
+ema2_val = ema(close, ema2_length)
+ema3_val = ema(close, ema3_length)
+ema4_val = ema(close, ema4_length)
+plot(ema1_val, "ema1", color=color.blue,linewidth=3)
+plot(ema2_val, "ema2", color=color.green,linewidth=3)
+plot(ema3_val, "ema3", color=color.yellow,linewidth=3)
+plot(ema4_val, "ema4", color=color.red,linewidth=3)
+
+if(position_mode == 'long' and close < ema1_val)
+    position_mode := ''
+if(position_mode == 'short' and close > ema4_val)
+    position_mode := ''
+
+
+longSignal = ema1_val > ema2_val and  ema2_val > ema3_val and ema3_val  > ema4_val and  close > ema1_val and close > open and position_mode != 'long'
+if(longSignal)
+    position_mode := 'long'
+plotshape(longSignal,location=location.belowbar,style=shape.triangleup,color=color.green,size=size.normal)
+alertcondition(longSignal,title="BB RSI buy signal",message="BB RSI buy signal")
+
+shortSignal = ema1_val < ema2_val and ema2_val < ema3_val and ema3_val < ema4_val and  close < ema4_val and close < open and position_mode != 'short'
+if(shortSignal)
+    position_mode := 'short'
+plotshape(shortSignal,location=location.abovebar,style=shape.triangledown,color=color.red,size=size.normal)
+alertcondition(shortSignal,title="BB RSI buy signal",message="BB RSI buy signal")

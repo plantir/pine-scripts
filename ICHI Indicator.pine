@@ -1,0 +1,66 @@
+//@version=4
+study(title="Ichimoku Signal", shorttitle="Ichimoku", overlay=true)
+position_mode = ''
+position_mode := na(position_mode[1])?na:position_mode[1]
+
+len = input(14, minval=1, title="Length")
+rsi_src = input(close, "Source", type = input.source)
+up = rma(max(change(rsi_src), 0), len)
+down = rma(-min(change(rsi_src), 0), len)
+rsi = down == 0 ? 100 : up == 0 ? 0 : 100 - (100 / (1 + up / down))
+
+
+conversionPeriods = input(9, minval=1, title="Conversion Line Length")
+basePeriods = input(26, minval=1, title="Base Line Length")
+laggingSpan2Periods = input(52, minval=1, title="Lagging Span 2 Length")
+displacement = input(26, minval=1, title="Displacement")
+donchian(len) => avg(lowest(len), highest(len))
+conversionLine = donchian(conversionPeriods)
+baseLine = donchian(basePeriods)
+leadLine1 = avg(conversionLine, baseLine)
+leadLine2 = donchian(laggingSpan2Periods)
+plot(conversionLine, color=#2962ff,linewidth=2, title="Conversion Line")
+plot(baseLine, color=#ffeb3b,linewidth=2, title="Base Line")
+plot(close, offset = -displacement + 1,linewidth=3, color=#9c27b0, title="Lagging Span")
+p1 = plot(leadLine1, offset = displacement - 1, color=color.green,
+	 title="Lead 1",display=0)
+p2 = plot(leadLine2, offset = displacement - 1, color=color.red,
+	 title="Lead 2",display=0)
+fill(p1, p2, color = leadLine1 > leadLine2 ? color.green : color.red,transp=75)
+
+if(leadLine1[displacement - 1] > leadLine2[displacement - 1])
+    if(open < leadLine2[displacement - 1] and close > leadLine2[displacement - 1])
+        position_mode := ''
+    if(open > leadLine1[displacement - 1] and close < leadLine1[displacement - 1])
+        position_mode := ''
+
+if(leadLine1[displacement - 1] < leadLine2[displacement - 1])
+    if(open < leadLine1[displacement - 1] and close > leadLine1[displacement - 1])
+        position_mode := ''
+    if(open > leadLine2[displacement - 1] and close < leadLine2[displacement - 1])
+        position_mode := ''
+
+// LONG 
+goLongCondition1 = leadLine1 > leadLine2
+goLongCondition2 = conversionLine > baseLine
+goLongCondition3 = close > leadLine1[displacement - 1] and close > leadLine2[displacement - 1]
+goLongCondition4 = close > leadLine1[displacement + displacement - 1] and close > leadLine2[displacement + displacement - 1]
+goLongCondition5 = close > baseLine
+buySignal = goLongCondition1 and goLongCondition2 and goLongCondition3 and goLongCondition4 and goLongCondition5 and position_mode != 'long'  //and !exitSignal
+plotshape(buySignal ,location=location.belowbar,style=shape.triangleup,color=color.green)
+alertcondition(buySignal,title="ichikomo buy signal",message="ichikomo buy signal")
+if(buySignal)
+    position_mode := 'long'
+// SHORT 
+goShortCondition1 = leadLine1 < leadLine2
+goShortCondition2 = conversionLine < baseLine
+goShortCondition3 = close < leadLine1[displacement - 1] and close < leadLine2[displacement - 1]
+goShortCondition4 = close < leadLine1[displacement + displacement - 1] and close < leadLine2[displacement + displacement - 1]
+goShortCondition5 = close < baseLine
+sellSignal = goShortCondition1 and goShortCondition2 and goShortCondition3 and goShortCondition4 and goShortCondition5 and position_mode != 'short'
+plotshape(sellSignal,location=location.abovebar,style=shape.triangledown,color=color.red)
+alertcondition(sellSignal,title="ichikomo sell signal",message="ichikomo sell signal")
+if(sellSignal)
+    position_mode := 'short'
+
+
