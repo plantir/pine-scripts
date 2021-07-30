@@ -23,7 +23,7 @@ plot(ema4_val, "ema4", color=color.red,linewidth=3)
 
 if(position_mode == 'long' and close < ema1_val)
     position_mode := ''
-if(position_mode == 'short' and close > ema4_val)
+if(position_mode == 'short' and close > ema1_val)
     position_mode := ''
 
 
@@ -33,7 +33,7 @@ if(longSignal)
 plotshape(longSignal,location=location.belowbar,style=shape.triangleup,color=color.green,size=size.normal)
 alertcondition(longSignal,title="BB RSI buy signal",message="BB RSI buy signal")
 
-shortSignal = ema1_val < ema2_val and ema2_val < ema3_val and ema3_val < ema4_val and  close < ema4_val and close < open and position_mode != 'short'
+shortSignal = ema1_val < ema2_val and ema2_val < ema3_val and ema3_val < ema4_val and  close < ema1_val and close < open and position_mode != 'short'
 if(shortSignal)
     position_mode := 'short'
 plotshape(shortSignal,location=location.abovebar,style=shape.triangledown,color=color.red,size=size.normal)
